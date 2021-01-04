@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+	<head>
+		<meta charset="UTF-8">
+		<title>Document</title>
+	</head>
+
+	<style>
+		canvas {
+			border: 1px solid black;
+			max-width: 80vw;
+			max-height: 80vh;
+			margin: auto;
+		}
+
+		body {
+			display: flex;
+			flex-direction: column;
+			margin: 40px;
+		}
+
+		.canvas {
+			display: flex;
+			margin-top: 40px;
+		}
+
+		.toolsbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		[type="file"],
+		button {
+			width: 15%;
+		}
+
+		.filtres {
+			display: flex;
+			flex-direction: column;
+			width: 60%;
+		}
+
+		ul {
+			display: flex;
+			justify-content: space-between;
+			margin: 0;
+			padding-left: 0;
+		}
+
+		li {
+			list-style-type: none;
+			border: 1px solid black;
+			padding: 5px 10px;
+		}
+
+		#range {
+			width: 50%;
+			margin: auto;
+			margin-top: 15px;
+		}
+	</style>
+
+	<body>
+		<div class="toolsbar">
+			<input type="file" onchange="handleFiles()" id="input" accept=".png,.jpg">
+
+			<div class="filtres">
+				<ul>
+					<li><a href="#" id="grayscale" onclick="filterRange(this.id)">Niveaux de gris</a></li>
+					<li><a href="#" id="sepia" onclick="filterRange(this.id)">Sépia</a></li>
+					<li><a href="#" id="brightness" onclick="filterRange(this.id)">Luminosité</a></li>
+					<li><a href="#" id="blur" onclick="filterRange(this.id)">Flou</a></li>
+					<li><a href="#" id="invert" onclick="filterRange(this.id)">Inversement de couleurs (toggle)</a></li>
+					<li><a href="#" id="rotate" onclick="filterRange(this.id)">Rotation</a></li>
+					<li><a href="#" onclick="handleFiles()">Enlever le filtre</a></li>
+				</ul>
+				<input type="range" id="range" name="range" min="0" max="1" step="0.01" onchange="rangeChange(this.className)">
+			</div>
+			
+			<button onclick="exportCanvas()">Exporter le canvas</button>
+		</div>
+
+		<div class="canvas">
+			<canvas id="canvas" width="800" height="500">
+			  Désolé, votre navigateur ne prend pas en charge &lt;canvas&gt;.
+			</canvas>
+		</div>
+	</body>
+
+	<script>
+
+		const fichierSelectionne = document.getElementById('input').files[0];
+
+		let fileInput = document.getElementById('input');
+
+		let currentRotation = 0;
+
+		function handleFiles($filter) {	
+
+			if(fileInput.files) {
+				let file = fileInput.files[0];
+				var reader  = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onloadend = function (e) {
+					var image = new Image();
+					image.src = e.target.result;
+					image.onload = function() {
+						var canvas = document.getElementById('canvas');
+						canvas.width = image.width;
+						canvas.height = image.height;
+						var ctx = canvas.getContext('2d');
+						if ($filter) {
+							if ($filter != 'rotate') {
+								ctx.filter = $filter;
+							}
+							else {
+								currentRotation = currentRotation + 90;
+							}
+						}
+						ctx.translate( canvas.width/2, canvas.height/2 );
+						ctx.rotate(currentRotation * Math.PI / 180);
+						ctx.translate( -canvas.width/2, -canvas.height/2 );
+
+						ctx.drawImage(image,0,0);
+					}
+				}
+			}
+		}
+
+		const $range = document.getElementById("range");
+
+		function rangeValue($filter){
+			let rangevalue = $range.value;
+
+			if ($filter == 'brightness') {
+				rangevalue = rangevalue * 2;
+			}
+			else if ($filter == 'blur') {
+				rangevalue = (rangevalue * 20) + 'px';
+			}
+			else if ($filter == 'invert') {
+				if (rangevalue >= 0.5) {
+					rangevalue = 1
+				}
+				else {
+					rangevalue = 0;
+				}
+			}
+			else if ($filter == 'rotate') {
+				currentRotation = rangevalue * 360;
+			}
+			else {
+				rangevalue = $range.value;
+			}
+
+			return rangevalue;
+		}
+
+		function filterRange($filter){
+			const filtre = $filter + '(' + rangeValue($filter) + ')';
+			$range.className = '';
+			$range.classList.add($filter);
+			handleFiles(filtre);
+		}
+
+		function rangeChange($filter){
+			const filtre = $filter + '(' + rangeValue($filter) + ')';
+			handleFiles(filtre);
+		}
+
+		function exportCanvas(){
+			var dataURL = canvas.toDataURL();
+		    var win = window.open();
+		    win.document.write('<iframe src="' + dataURL  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+		}
+
+	</script>
+
+</html>
